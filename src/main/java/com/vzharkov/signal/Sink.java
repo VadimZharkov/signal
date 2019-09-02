@@ -6,6 +6,7 @@ package com.vzharkov.signal;
  * @param <V> Type of value being sent.
  * @param <E> Type of failure that can occur.
  */
+@FunctionalInterface
 public interface Sink<V, E> {
     void send(final Event<V, E> event);
 

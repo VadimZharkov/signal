@@ -16,12 +16,24 @@ public class SignalTest {
     }
 
     @Test
+    public void eventIsSent() {
+        value = null;
+        final Integer expected = 10;
+
+        final Pipe<Integer, Throwable> pipe = Signal.createPipe();
+        pipe.signal().observe(e -> value = e.value());
+        pipe.sink().send(Event.value(10));
+
+        assertEquals(expected, value);
+    }
+
+    @Test
     public void valueIsSent() {
         value = null;
         final Integer expected = 10;
 
         final Pipe<Integer, Throwable> pipe = Signal.createPipe();
-        pipe.signal().subscribe(e -> value = e.value());
+        pipe.signal().observeValue(v -> value = v);
         pipe.sink().sendValue(10);
 
         assertEquals(expected, value);
@@ -41,7 +53,7 @@ public class SignalTest {
         final Throwable expected = new Throwable();
 
         Pipe<Integer, Throwable> pipe = Signal.createPipe();
-        pipe.signal().subscribe(e -> error = e.error());
+        pipe.signal().observeError(e -> error = e);
         pipe.sink().sendError(expected);
 
         assertEquals(expected, error);
@@ -54,7 +66,7 @@ public class SignalTest {
         value = expected;
 
         final Pipe<Integer, Throwable> pipe = Signal.createPipe();
-        final Disposable disposable = pipe.signal().subscribe((e) -> value = e.value());
+        final Disposable disposable = pipe.signal().observe(e -> value = e.value());
         disposable.dispose();
         pipe.sink().sendValue(5);
 
@@ -67,10 +79,7 @@ public class SignalTest {
         final Integer expected = 10;
 
         final Pipe<Integer, Throwable> pipe = Signal.createPipe();
-        pipe.signal().subscribe(e -> {
-            if (e.isValue())
-                value = e.value();
-        });
+        pipe.signal().observeValue(v -> value = v);
 
         pipe.sink().sendValue(10);
         assertEquals(expected, value);
@@ -89,7 +98,7 @@ public class SignalTest {
         final Integer expected = 10;
 
         final Pipe<Integer, Throwable> pipe = Signal.createPipe();
-        pipe.signal().subscribe(e -> {
+        pipe.signal().observe(e -> {
             if (e.isError())
                 error = e.error();
             else if (e.isValue())
@@ -115,7 +124,7 @@ public class SignalTest {
         final Pipe<String, Throwable> pipe = Signal.createPipe();
         pipe.signal()
                 .map(Integer::valueOf)
-                .subscribe(e -> value = e.value());
+                .observeValue(v -> value = v);
         pipe.sink().sendValue("10");
 
         assertEquals(expected, value);

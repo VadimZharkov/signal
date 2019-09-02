@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -20,7 +21,7 @@ public class Signal<V, E> {
     }
 
     private final AtomicReference<State> state = new AtomicReference<>(State.ALIVE);
-    private final Map<UUID, Observer<V, E>> observers = new ConcurrentHashMap<>();
+    private final Map<UUID, Consumer<Event<V, E>>> observers = new ConcurrentHashMap<>();
 
     public static <V, E> Pipe<V, E> createPipe() {
         Signal<V, E> signal = new Signal<>();
@@ -52,23 +53,44 @@ public class Signal<V, E> {
         if (!isAlive())
             return;
 
-        observers.forEach((k, observer) -> observer.on(event));
+        observers.forEach((k, observer) -> observer.accept(event));
 
         if (event.isTerminating()) {
             state.getAndUpdate((s) -> event.isError() ? State.FAILED : State.COMPLETED);
         }
     }
 
-    public Disposable subscribe(final Observer<V, E> observer) {
+    public Disposable observe(final Consumer<Event<V, E>> observer) {
         final UUID key = UUID.randomUUID();
         observers.put(key, observer);
 
         return () -> observers.remove(key);
     }
 
+    public Disposable observeValue(final Consumer<V> observer) {
+        return observe(e -> {
+            if (e.isValue())
+                observer.accept(e.value());
+        });
+    }
+
+    public Disposable observeCompleted(final Thunk observer) {
+        return observe(e -> {
+            if (e.isCompleted())
+                observer.apply();
+        });
+    }
+
+    public Disposable observeError(final Consumer<E> observer) {
+        return observe(e -> {
+            if (e.isError())
+                observer.accept(e.error());
+        });
+    }
+
     public <U> Signal<U, E> map(final Function<V, U> mapper) {
         final Pipe<U, E> pipe = Signal.createPipe();
-        subscribe(e -> pipe.sink().send(e.map(mapper)));
+        observe(e -> pipe.sink().send(e.map(mapper)));
 
         return pipe.signal();
     }
