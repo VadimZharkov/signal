@@ -4,64 +4,59 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class SignalTest {
-
     private Integer value = null;
-    private boolean compleated = false;
     private Throwable error = null;
 
     @Test
-    public void signalIsCreated() {
-        Pipe<String, Throwable> pipe = Signal.pipe();
+    public void signalIsCreatedAndAlive() {
+        final Pipe<String, Throwable> pipe = Signal.createPipe();
 
-        assertNotNull(pipe);
         assertNotNull(pipe.signal());
+        assertTrue(pipe.signal().isAlive());
     }
 
     @Test
-    public void signalSentValue() {
+    public void valueIsSent() {
         value = null;
-        Integer expected = 10;
+        final Integer expected = 10;
 
-        Pipe<Integer, Throwable> pipe = Signal.pipe();
-        pipe.signal().subscribe((e) -> value = e.getValue());
-        pipe.inputValue(expected);
+        final Pipe<Integer, Throwable> pipe = Signal.createPipe();
+        pipe.signal().subscribe(e -> value = e.value());
+        pipe.sink().sendValue(10);
 
         assertEquals(expected, value);
     }
 
     @Test
-    public void signalSentCompleated() {
-        compleated = false;
-        boolean expected = true;
+    public void signalIsCompleted() {
+        final Pipe<Integer, Throwable> pipe = Signal.createPipe();
+        pipe.sink().sendCompleted();
 
-        Pipe<Integer, Throwable> pipe = Signal.pipe();
-        pipe.signal().subscribe((e) -> compleated = e.isCompleted());
-        pipe.inputCompleted();
-
-        assertEquals(expected, compleated);
+        assertTrue(pipe.signal().isCompleted());
     }
 
     @Test
-    public void signalSentError() {
+    public void errorIsSentAndSignalIsFailed() {
         error = null;
-        Throwable expected = new Throwable();
+        final Throwable expected = new Throwable();
 
-        Pipe<Integer, Throwable> pipe = Signal.pipe();
-        pipe.signal().subscribe((e) -> error = e.getError());
-        pipe.inputError(expected);
+        Pipe<Integer, Throwable> pipe = Signal.createPipe();
+        pipe.signal().subscribe(e -> error = e.error());
+        pipe.sink().sendError(expected);
 
         assertEquals(expected, error);
+        assertTrue(pipe.signal().isFailed());
     }
 
     @Test
     public void observerIsDisposed() {
-        Integer expected = 10;
+        final Integer expected = 10;
         value = expected;
 
-        Pipe<Integer, Throwable> pipe = Signal.pipe();
-        Disposable disposable = pipe.signal().subscribe((e) -> value = e.getValue());
+        final Pipe<Integer, Throwable> pipe = Signal.createPipe();
+        final Disposable disposable = pipe.signal().subscribe((e) -> value = e.value());
         disposable.dispose();
-        pipe.inputValue(5);
+        pipe.sink().sendValue(5);
 
         assertEquals(value, expected);
     }
@@ -69,59 +64,59 @@ public class SignalTest {
     @Test
     public void signalIsStoppedAfterCompletion() {
         value = null;
-        compleated = false;
+        final Integer expected = 10;
 
-        Pipe<Integer, Throwable> pipe = Signal.pipe();
-        pipe.signal().subscribe((e) -> {
-            if (e.isCompleted())
-                compleated = true;
-            else if (e.isValue())
-                value = e.getValue();
+        final Pipe<Integer, Throwable> pipe = Signal.createPipe();
+        pipe.signal().subscribe(e -> {
+            if (e.isValue())
+                value = e.value();
         });
 
-        pipe.inputValue(10);
-        assertEquals(new Integer(10), value);
+        pipe.sink().sendValue(10);
+        assertEquals(expected, value);
 
-        pipe.inputCompleted();
-        assertEquals(true, compleated);
+        pipe.sink().sendCompleted();
+        assertTrue(pipe.signal().isCompleted());
 
-        pipe.inputValue(15);
-        assertEquals(new Integer(10), value);
+        pipe.sink().sendValue(15);
+        assertEquals(expected, value);
     }
 
     @Test
     public void signalIsStoppedAfterError() {
         value = null;
         error = null;
+        final Integer expected = 10;
 
-        Pipe<Integer, Throwable> pipe = Signal.pipe();
-        pipe.signal().subscribe((e) -> {
+        final Pipe<Integer, Throwable> pipe = Signal.createPipe();
+        pipe.signal().subscribe(e -> {
             if (e.isError())
-                error = e.getError();
+                error = e.error();
             else if (e.isValue())
-                value = e.getValue();
+                value = e.value();
         });
 
-        pipe.inputValue(10);
-        assertEquals(new Integer(10), value);
+        pipe.sink().sendValue(10);
+        assertEquals(expected, value);
 
-        pipe.inputError(new Throwable());
+        pipe.sink().sendError(new Throwable());
         assertNotNull(error);
+        assertTrue(pipe.signal().isFailed());
 
-        pipe.inputValue(15);
-        assertEquals(new Integer(10), value);
+        pipe.sink().sendValue(15);
+        assertEquals(expected, value);
     }
 
     @Test
     public void signalIsMapped() {
         value = 0;
-        Integer expected = 10;
+        final Integer expected = 10;
 
-        Pipe<String, Throwable> pipe = Signal.pipe();
+        final Pipe<String, Throwable> pipe = Signal.createPipe();
         pipe.signal()
                 .map(Integer::valueOf)
-                .subscribe((r) -> value = r.getValue());
-        pipe.inputValue("10");
+                .subscribe(e -> value = e.value());
+        pipe.sink().sendValue("10");
 
         assertEquals(expected, value);
     }

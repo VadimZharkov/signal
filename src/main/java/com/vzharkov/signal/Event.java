@@ -36,7 +36,7 @@ public class Event<V, E> {
         return new Event<>(ERROR, error);
     }
 
-    public Type getType() {
+    public Type type() {
         return type;
     }
 
@@ -45,7 +45,7 @@ public class Event<V, E> {
     }
 
     @SuppressWarnings("unchecked")
-    public V getValue() {
+    public V value() {
         return isValue() ? (V)object : null;
     }
 
@@ -54,7 +54,7 @@ public class Event<V, E> {
     }
 
     @SuppressWarnings("unchecked")
-    public E getError() {
+    public E error() {
         return isError() ? (E)object : null;
     }
 
@@ -71,13 +71,13 @@ public class Event<V, E> {
         String result;
         switch (type) {
             case VALUE:
-                result = getValue().toString();
+                result = value().toString();
                 break;
             case COMPLETED:
                 result = "Completed";
                 break;
             case ERROR:
-                result = "Error: " + getError().toString();
+                result = "Error: " + error().toString();
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + type);
@@ -96,23 +96,23 @@ public class Event<V, E> {
         Event event = (Event<?,?>)o;
 
         if (isValue())
-            return getValue().equals(event.getValue());
+            return value().equals(event.value());
 
         if (isCompleted() && event.isCompleted())
             return true;
 
-        return getError().equals(event.getError());
+        return error().equals(event.error());
     }
 
     @Override
     public int hashCode() {
         if (isValue())
-            return getValue().hashCode();
+            return value().hashCode();
 
         if (isCompleted())
             return super.hashCode();
 
-        return getError().hashCode();
+        return error().hashCode();
     }
 
     public <U> Event<U, E> map(final Function<V, U> transform) {
@@ -120,13 +120,13 @@ public class Event<V, E> {
         Event<U, E> event;
         switch (type) {
             case VALUE:
-                event = Event.value(transform.apply(getValue()));
+                event = Event.value(transform.apply(value()));
                 break;
             case COMPLETED:
                 event = Event.completed();
                 break;
             case ERROR:
-                event = Event.error(getError());
+                event = Event.error(error());
                 break;
             default:
                 throw new IllegalStateException("This should not have happened");

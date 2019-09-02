@@ -11,10 +11,10 @@ public class EventTest {
         String expected = "value";
         Event event = Event.value(expected);
 
-        assertEquals(expected, event.getValue());
+        assertEquals(expected, event.value());
         assertFalse(event.isCompleted());
         assertFalse(event.isError());
-        assertNull(event.getError());
+        assertNull(event.error());
     }
 
     @Test
@@ -23,9 +23,9 @@ public class EventTest {
 
         assertTrue(event.isCompleted());
         assertFalse(event.isValue());
-        assertNull(event.getValue());
+        assertNull(event.value());
         assertFalse(event.isError());
-        assertNull(event.getError());
+        assertNull(event.error());
     }
 
     @Test
@@ -34,9 +34,9 @@ public class EventTest {
         Event event = Event.error(expected);
 
         assertTrue(event.isError());
-        assertEquals(expected, event.getError());
+        assertEquals(expected, event.error());
         assertFalse(event.isValue());
-        assertNull(event.getValue());
+        assertNull(event.value());
         assertFalse(event.isCompleted());
     }
 
@@ -49,8 +49,8 @@ public class EventTest {
         assertTrue(second.isValue());
         assertFalse(second.isCompleted());
         assertFalse(second.isError());
-        assertNull(second.getError());
-        assertEquals("10", second.getValue());
+        assertNull(second.error());
+        assertEquals("10", second.value());
         assertNotEquals(first, second);;
     }
 
@@ -61,9 +61,9 @@ public class EventTest {
 
         assertTrue(second.isCompleted());
         assertFalse(second.isValue());
-        assertNull(second.getValue());
+        assertNull(second.value());
         assertFalse(second.isError());
-        assertNull(second.getError());
+        assertNull(second.error());
         assertEquals(first, second);
     }
 
@@ -75,9 +75,9 @@ public class EventTest {
 
         assertTrue(second.isError());
         assertFalse(second.isValue());
-        assertNull(second.getValue());
+        assertNull(second.value());
         assertFalse(second.isCompleted());
-        assertEquals(second.getError(), error);
+        assertEquals(second.error(), error);
         assertEquals(first, second);;
     }
 }
