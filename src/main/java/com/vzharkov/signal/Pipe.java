@@ -6,9 +6,8 @@ package com.vzharkov.signal;
  * and at the other end (Signal) you can observe what's coming out.
  *
  * @param <V> Type of value being sent.
- * @param <E> Type of failure that can occur.
  */
-public interface Pipe<V, E> {
-    Sink<V, E> sink();
-    Signal<V, E> signal();
+public interface Pipe<V> {
+    Sink<V> sink();
+    Signal<V> signal();
 }

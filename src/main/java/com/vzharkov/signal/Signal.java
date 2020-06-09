@@ -11,9 +11,8 @@ import java.util.function.Function;
  * Signal is a push-driven stream that sends Events over time.
  *
  * @param <V> Type of value being sent.
- * @param <E> Type of failure that can occur.
  */
-public class Signal<V, E> {
+public class Signal<V> {
     public enum State {
         ALIVE,
         COMPLETED,
@@ -21,17 +20,17 @@ public class Signal<V, E> {
     }
 
     private final AtomicReference<State> state = new AtomicReference<>(State.ALIVE);
-    private final Map<UUID, Consumer<Event<V, E>>> observers = new ConcurrentHashMap<>();
+    private final Map<UUID, Consumer<Event<V>>> observers = new ConcurrentHashMap<>();
 
-    public static <V, E> Pipe<V, E> createPipe() {
-        Signal<V, E> signal = new Signal<>();
+    public static <V, E> Pipe<V> createPipe() {
+        Signal<V> signal = new Signal<>();
 
-        return new Pipe<V, E>() {
-            public Sink<V, E> sink() {
+        return new Pipe<V>() {
+            public Sink<V> sink() {
                 return signal::send;
             }
 
-            public Signal<V, E> signal() {
+            public Signal<V> signal() {
                 return signal;
             }
        };
@@ -49,7 +48,7 @@ public class Signal<V, E> {
         return state.get() == State.FAILED;
     }
 
-    protected void send(final Event<V, E> event) {
+    protected void send(final Event<V> event) {
         if (!isAlive())
             return;
 
@@ -60,7 +59,7 @@ public class Signal<V, E> {
         }
     }
 
-    public Disposable observe(final Consumer<Event<V, E>> observer) {
+    public Disposable observe(final Consumer<Event<V>> observer) {
         final UUID key = UUID.randomUUID();
         observers.put(key, observer);
 
@@ -81,15 +80,15 @@ public class Signal<V, E> {
         });
     }
 
-    public Disposable observeError(final Consumer<E> observer) {
+    public Disposable observeError(final Consumer<Throwable> observer) {
         return observe(e -> {
             if (e.isError())
                 observer.accept(e.error());
         });
     }
 
-    public <U> Signal<U, E> map(final Function<V, U> mapper) {
-        final Pipe<U, E> pipe = Signal.createPipe();
+    public <U> Signal<U> map(final Function<V, U> mapper) {
+        final Pipe<U> pipe = Signal.createPipe();
         observe(e -> pipe.sink().send(e.map(mapper)));
 
         return pipe.signal();

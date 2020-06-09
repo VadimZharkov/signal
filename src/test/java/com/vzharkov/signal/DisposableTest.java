@@ -2,7 +2,8 @@ package com.vzharkov.signal;
 
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 public class DisposableTest {
     private class Resource {};
@@ -10,7 +11,7 @@ public class DisposableTest {
     private Resource resource = new Resource();
 
     @Test
-    public void resourceIsDisposed() {
+    public void testDisposable() {
         Disposable disposable = () -> resource = null;
 
         assertNotNull(resource);

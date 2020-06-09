@@ -4,11 +4,10 @@ package com.vzharkov.signal;
  * Represents a signal input.
  *
  * @param <V> Type of value being sent.
- * @param <E> Type of failure that can occur.
  */
 @FunctionalInterface
-public interface Sink<V, E> {
-    void send(final Event<V, E> event);
+public interface Sink<V> {
+    void send(final Event<V> event);
 
     default void sendValue(final V v) {
         send(Event.value(v));
@@ -18,7 +17,7 @@ public interface Sink<V, E> {
         send(Event.completed());
     }
 
-    default void sendError(final E e)  {
+    default void sendError(final Throwable e)  {
         send(Event.error(e));
     }
 }

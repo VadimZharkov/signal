@@ -8,7 +8,7 @@ import static com.vzharkov.signal.Event.Type.*;
 /**
  * Represents a signal event.
  */
-public class Event<V, E> {
+public class Event<V> {
     public enum Type {
         VALUE,
         COMPLETED,
@@ -24,15 +24,15 @@ public class Event<V, E> {
             this.object = Objects.requireNonNull(object);
     }
 
-    public static <V, E> Event<V, E> value(final V value) {
+    public static <V> Event<V> value(final V value) {
         return new Event<>(VALUE, value);
     }
 
-    public static <V, E> Event<V, E> completed() {
+    public static <V> Event<V> completed() {
         return new Event<>(COMPLETED, null);
     }
 
-    public static <V, E> Event<V, E> error(final E error) {
+    public static <V> Event<V> error(final Throwable error) {
         return new Event<>(ERROR, error);
     }
 
@@ -54,8 +54,8 @@ public class Event<V, E> {
     }
 
     @SuppressWarnings("unchecked")
-    public E error() {
-        return isError() ? (E)object : null;
+    public Throwable error() {
+        return isError() ? (Throwable) object : null;
     }
 
     public boolean isCompleted() {
@@ -93,7 +93,7 @@ public class Event<V, E> {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        Event event = (Event<?,?>)o;
+        Event event = (Event<?>) o;
 
         if (isValue())
             return value().equals(event.value());
@@ -115,9 +115,10 @@ public class Event<V, E> {
         return error().hashCode();
     }
 
-    public <U> Event<U, E> map(final Function<V, U> transform) {
+    public <U> Event<U> map(final Function<V, U> transform) {
         Objects.requireNonNull(transform);
-        Event<U, E> event;
+
+        Event<U> event;
         switch (type) {
             case VALUE:
                 event = Event.value(transform.apply(value()));

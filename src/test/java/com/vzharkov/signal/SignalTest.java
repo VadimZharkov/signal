@@ -1,6 +1,7 @@
 package com.vzharkov.signal;
 
 import org.junit.Test;
+
 import static org.junit.Assert.*;
 
 public class SignalTest {
@@ -8,19 +9,19 @@ public class SignalTest {
     private Throwable error = null;
 
     @Test
-    public void signalIsCreatedAndAlive() {
-        final Pipe<String, Throwable> pipe = Signal.createPipe();
+    public void testCreatedSignal() {
+        final Pipe<String> pipe = Signal.createPipe();
 
         assertNotNull(pipe.signal());
         assertTrue(pipe.signal().isAlive());
     }
 
     @Test
-    public void eventIsSent() {
+    public void testEventSend() {
         value = null;
         final Integer expected = 10;
 
-        final Pipe<Integer, Throwable> pipe = Signal.createPipe();
+        final Pipe<Integer> pipe = Signal.createPipe();
         pipe.signal().observe(e -> value = e.value());
         pipe.sink().send(Event.value(10));
 
@@ -28,11 +29,11 @@ public class SignalTest {
     }
 
     @Test
-    public void valueIsSent() {
+    public void testValueSend() {
         value = null;
         final Integer expected = 10;
 
-        final Pipe<Integer, Throwable> pipe = Signal.createPipe();
+        final Pipe<Integer> pipe = Signal.createPipe();
         pipe.signal().observeValue(v -> value = v);
         pipe.sink().sendValue(10);
 
@@ -40,19 +41,19 @@ public class SignalTest {
     }
 
     @Test
-    public void signalIsCompleted() {
-        final Pipe<Integer, Throwable> pipe = Signal.createPipe();
+    public void testCompletedSend() {
+        final Pipe<Integer> pipe = Signal.createPipe();
         pipe.sink().sendCompleted();
 
         assertTrue(pipe.signal().isCompleted());
     }
 
     @Test
-    public void errorIsSentAndSignalIsFailed() {
+    public void testErrorSend() {
         error = null;
         final Throwable expected = new Throwable();
 
-        Pipe<Integer, Throwable> pipe = Signal.createPipe();
+        Pipe<Integer> pipe = Signal.createPipe();
         pipe.signal().observeError(e -> error = e);
         pipe.sink().sendError(expected);
 
@@ -61,11 +62,11 @@ public class SignalTest {
     }
 
     @Test
-    public void observerIsDisposed() {
+    public void testObserverDisposable() {
         final Integer expected = 10;
         value = expected;
 
-        final Pipe<Integer, Throwable> pipe = Signal.createPipe();
+        final Pipe<Integer> pipe = Signal.createPipe();
         final Disposable disposable = pipe.signal().observe(e -> value = e.value());
         disposable.dispose();
         pipe.sink().sendValue(5);
@@ -74,11 +75,11 @@ public class SignalTest {
     }
 
     @Test
-    public void signalIsStoppedAfterCompletion() {
+    public void testCompletion() {
         value = null;
         final Integer expected = 10;
 
-        final Pipe<Integer, Throwable> pipe = Signal.createPipe();
+        final Pipe<Integer> pipe = Signal.createPipe();
         pipe.signal().observeValue(v -> value = v);
 
         pipe.sink().sendValue(10);
@@ -92,12 +93,12 @@ public class SignalTest {
     }
 
     @Test
-    public void signalIsStoppedAfterError() {
+    public void testStoppedAfterError() {
         value = null;
         error = null;
         final Integer expected = 10;
 
-        final Pipe<Integer, Throwable> pipe = Signal.createPipe();
+        final Pipe<Integer> pipe = Signal.createPipe();
         pipe.signal().observe(e -> {
             if (e.isError())
                 error = e.error();
@@ -117,11 +118,11 @@ public class SignalTest {
     }
 
     @Test
-    public void signalIsMapped() {
+    public void testSignalMap() {
         value = 0;
         final Integer expected = 10;
 
-        final Pipe<String, Throwable> pipe = Signal.createPipe();
+        final Pipe<String> pipe = Signal.createPipe();
         pipe.signal()
                 .map(Integer::valueOf)
                 .observeValue(v -> value = v);

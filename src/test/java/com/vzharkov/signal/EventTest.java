@@ -7,9 +7,9 @@ import static org.junit.Assert.*;
 public class EventTest {
 
     @Test
-    public void isValueEvent() {
+    public void testValueEvent() {
         String expected = "value";
-        Event event = Event.value(expected);
+        Event<String> event = Event.value(expected);
 
         assertEquals(expected, event.value());
         assertFalse(event.isCompleted());
@@ -18,8 +18,8 @@ public class EventTest {
     }
 
     @Test
-    public void isCompletedEvent() {
-        Event event = Event.completed();
+    public void testCompletedEvent() {
+        Event<Object> event = Event.completed();
 
         assertTrue(event.isCompleted());
         assertFalse(event.isValue());
@@ -29,9 +29,9 @@ public class EventTest {
     }
 
     @Test
-    public void isFailedEvent() {
+    public void testFailedEvent() {
         Throwable expected = new Throwable();
-        Event event = Event.error(expected);
+        Event<Object> event = Event.error(expected);
 
         assertTrue(event.isError());
         assertEquals(expected, event.error());
@@ -41,10 +41,10 @@ public class EventTest {
     }
 
     @Test
-    public void isValueMapped() {
+    public void testValueMap() {
         Integer value = 10;
-        Event first = Event.value(value);
-        Event second = first.map(v -> v.toString());
+        Event<Integer> first = Event.value(value);
+        Event<String> second = first.map(Object::toString);
 
         assertTrue(second.isValue());
         assertFalse(second.isCompleted());
@@ -55,9 +55,9 @@ public class EventTest {
     }
 
     @Test
-    public void isCompletedMapped() {
-        Event first = Event.completed();
-        Event second = first.map(v -> v.toString());
+    public void testCompletedMap() {
+        Event<Object> first = Event.completed();
+        Event<String> second = first.map(Object::toString);
 
         assertTrue(second.isCompleted());
         assertFalse(second.isValue());
@@ -68,10 +68,10 @@ public class EventTest {
     }
 
     @Test
-    public void isErrorMapped() {
+    public void testErrorMap() {
         Throwable error = new Throwable();
-        Event first = Event.error(error);
-        Event second = first.map(v -> v.toString());
+        Event<Object> first = Event.error(error);
+        Event<String> second = first.map(Object::toString);
 
         assertTrue(second.isError());
         assertFalse(second.isValue());
