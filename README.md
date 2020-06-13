@@ -49,6 +49,10 @@ channel.output.subscribeValues(context, v -> {
 });
 ```  
 
+**Reactive extentions operators:**  
+
+Currently `map` is supported.
+
 **Thread safety:**  
 
 Signal is threadsafe.
