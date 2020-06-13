@@ -15,6 +15,7 @@ Disposable lifecicle = channel.output.subscribeValues(System.out::println);
 channel.input.sendValue(10);
 ```   
 **Lazy generation:**  
+
 In some cases, the signal emitter should not be created until after a subscriber connects.  
 
 ```java
@@ -29,6 +30,7 @@ boolean isSignalStarted = signal.isStarted();
 Disposable lifecicle = signal.subscribeValues(v -> System.out.println(v));
 ```  
 **Execution context:**  
+
 It is posible to specify invocation of subscription callback with help of Context.  
 ```java
 Context context = new Context() {
@@ -46,5 +48,7 @@ channel.output.subscribeValues(context, v -> {
     System.out.println(v);
 });
 ```  
+
 **Thread safety:**  
+
 Signal is threadsafe.
