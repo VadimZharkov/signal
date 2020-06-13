@@ -2,132 +2,182 @@ package com.vzharkov.signal;
 
 import org.junit.Test;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import static org.junit.Assert.*;
 
 public class SignalTest {
-    private Integer value = null;
-    private Throwable error = null;
-
     @Test
     public void testCreatedSignal() {
-        final Pipe<String> pipe = Signal.createPipe();
+        final Channel<String> channel = Signal.newChannel();
 
-        assertNotNull(pipe.signal());
-        assertTrue(pipe.signal().isAlive());
+        assertNotNull(channel.output);
+        assertTrue(channel.output.isAlive());
     }
 
     @Test
     public void testEventSend() {
-        value = null;
         final Integer expected = 10;
+        final Integer[] result = {0};
 
-        final Pipe<Integer> pipe = Signal.createPipe();
-        pipe.signal().observe(e -> value = e.value());
-        pipe.sink().send(Event.value(10));
+        final Channel<Integer> channel = Signal.newChannel();
+        channel.output.subscribe(e -> result[0] = e.value());
+        channel.input.send(Event.value(10));
 
-        assertEquals(expected, value);
+        assertEquals(expected, result[0]);
     }
 
     @Test
     public void testValueSend() {
-        value = null;
         final Integer expected = 10;
+        final Integer[] result = {0};
 
-        final Pipe<Integer> pipe = Signal.createPipe();
-        pipe.signal().observeValue(v -> value = v);
-        pipe.sink().sendValue(10);
+        final Channel<Integer> channel = Signal.newChannel();
+        channel.output.subscribeValues(v -> result[0] = v);
+        channel.input.sendValue(10);
 
-        assertEquals(expected, value);
+        assertEquals(expected, result[0]);
     }
 
     @Test
     public void testCompletedSend() {
-        final Pipe<Integer> pipe = Signal.createPipe();
-        pipe.sink().sendCompleted();
+        final Channel<Integer> channel = Signal.newChannel();
+        channel.input.sendCompleted();
 
-        assertTrue(pipe.signal().isCompleted());
+        assertTrue(channel.output.isCompleted());
     }
 
     @Test
     public void testErrorSend() {
-        error = null;
         final Throwable expected = new Throwable();
+        final Throwable[] error = {null};
 
-        Pipe<Integer> pipe = Signal.createPipe();
-        pipe.signal().observeError(e -> error = e);
-        pipe.sink().sendError(expected);
+        Channel<Integer> channel = Signal.newChannel();
+        channel.output.subscribeErrors(e -> error[0] = e);
+        channel.input.sendError(expected);
 
-        assertEquals(expected, error);
-        assertTrue(pipe.signal().isFailed());
+        assertEquals(expected, error[0]);
+        assertTrue(channel.output.isFailed());
     }
 
     @Test
     public void testObserverDisposable() {
         final Integer expected = 10;
-        value = expected;
+        final Integer[] result = {expected};
 
-        final Pipe<Integer> pipe = Signal.createPipe();
-        final Disposable disposable = pipe.signal().observe(e -> value = e.value());
+        final Channel<Integer> channel = Signal.newChannel();
+        final Disposable disposable = channel.output.subscribe(e -> result[0] = e.value());
         disposable.dispose();
-        pipe.sink().sendValue(5);
+        channel.input.sendValue(5);
 
-        assertEquals(value, expected);
+        assertEquals(result[0], expected);
     }
 
     @Test
     public void testCompletion() {
-        value = null;
         final Integer expected = 10;
+        final Integer[] result = {0};
 
-        final Pipe<Integer> pipe = Signal.createPipe();
-        pipe.signal().observeValue(v -> value = v);
+        final Channel<Integer> channel = Signal.newChannel();
+        channel.output.subscribeValues(v -> result[0] = v);
 
-        pipe.sink().sendValue(10);
-        assertEquals(expected, value);
+        channel.input.sendValue(10);
+        assertEquals(expected, result[0]);
 
-        pipe.sink().sendCompleted();
-        assertTrue(pipe.signal().isCompleted());
+        channel.input.sendCompleted();
+        assertTrue(channel.output.isCompleted());
 
-        pipe.sink().sendValue(15);
-        assertEquals(expected, value);
+        channel.input.sendValue(15);
+        assertEquals(expected, result[0]);
     }
 
     @Test
     public void testStoppedAfterError() {
-        value = null;
-        error = null;
         final Integer expected = 10;
+        final Throwable[] error = {null};
+        final Integer[] result = {0};
 
-        final Pipe<Integer> pipe = Signal.createPipe();
-        pipe.signal().observe(e -> {
+        final Channel<Integer> channel = Signal.newChannel();
+        channel.output.subscribe(e -> {
             if (e.isError())
-                error = e.error();
+                error[0] = e.error();
             else if (e.isValue())
-                value = e.value();
+                result[0] = e.value();
         });
 
-        pipe.sink().sendValue(10);
-        assertEquals(expected, value);
+        channel.input.sendValue(10);
+        assertEquals(expected, result[0]);
 
-        pipe.sink().sendError(new Throwable());
-        assertNotNull(error);
-        assertTrue(pipe.signal().isFailed());
+        channel.input.sendError(new Throwable());
+        assertNotNull(error[0]);
+        assertTrue(channel.output.isFailed());
 
-        pipe.sink().sendValue(15);
-        assertEquals(expected, value);
+        channel.input.sendValue(15);
+        assertEquals(expected, result[0]);
     }
 
     @Test
     public void testSignalMap() {
-        value = 0;
         final Integer expected = 10;
+        final Integer[] result = new Integer[1];
 
-        final Pipe<String> pipe = Signal.createPipe();
-        pipe.signal()
+        final Channel<String> channel = Signal.newChannel();
+        channel.output
                 .map(Integer::valueOf)
-                .observeValue(v -> value = v);
-        pipe.sink().sendValue("10");
+                .subscribeValues(v -> result[0] = v);
+        channel.input.sendValue("10");
 
-        assertEquals(expected, value);
+        assertEquals(expected, result[0]);
+    }
+
+    @Test
+    public void testLazySignal() {
+        final Integer expected = 10;
+        final Integer[] result = new Integer[1];
+
+        Signal<Integer> signal = Signal.generate(emitter -> {
+            emitter.sendValue(10);
+        });
+
+        assertNotNull(signal);
+        assertFalse(signal.isStarted());
+
+        signal.subscribeValues(v -> result[0] = v);
+
+        assertEquals(expected, result[0]);
+    }
+
+    @Test
+    public void testExecutionContext() throws InterruptedException {
+        final Context context = new Context() {
+            ExecutorService executor = Executors.newSingleThreadExecutor();
+
+            @Override
+            public void invoke(Action action) {
+                executor.submit(action::invoke);
+            }
+        };
+
+        final Integer expected = 10;
+        final Integer[] result = {0};
+        final String mainThreadName = Thread.currentThread().getName();
+        final String[] contextThreadName = {mainThreadName};
+        final CountDownLatch countDownLatch = new CountDownLatch(1);
+
+        final Channel<Integer> channel = Signal.newChannel();
+        channel.output.subscribeValues(context, v -> {
+            contextThreadName[0] = Thread.currentThread().getName();
+            result[0] = v;
+            countDownLatch.countDown();
+        });
+
+        channel.input.sendValue(10);
+
+        countDownLatch.await();
+
+        assertEquals(expected, result[0]);
+        assertNotEquals(mainThreadName, contextThreadName[0]);
     }
 }
